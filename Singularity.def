@@ -1,0 +1,39 @@
+Bootstrap: docker
+From: nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
+
+%post
+    # Update and install necessary packages
+    apt-get update && apt-get install -y \
+        python3 \
+        python3-pip \
+        build-essential \
+        libopenmpi-dev \
+        openmpi-bin \
+        wget \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install Python packages
+    pip3 install --upgrade pip
+    pip3 install -r ~/requirements.txt
+
+%environment
+    # Set environment variables
+    export PATH=/usr/local/cuda/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+%runscript
+    # Load environment variables from .env file
+    if [ -f ~/.env ]; then
+        export $(cat .env | xargs)
+    fi
+
+%labels
+    Author Wojciech Noskowiak
+    Version 1.0
+    Description Singularity container for running Monte Carlo simulation with CUDA and MPI
+
+%files
+    # Copy your simulation script and other necessary files into the container's user home directory
+    src ~/src
+    .env ~/.env
+    requirements.txt ~/requirements.txt
