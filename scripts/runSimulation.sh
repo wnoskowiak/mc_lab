@@ -1,1 +1,1 @@
-mpirun -np 4 python main.py --use-cuda --start-x-args 1.0 2.0 --travel-distance-args 3.0 4.0 --unit-vector-args 5.0 6.0
+mpirun -np 4 python3 main.py --use-cuda --start-x-args 1.0 2.0 --travel-distance-args 3.0 4.0 --unit-vector-args 5.0 6.0
