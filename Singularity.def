@@ -2,21 +2,32 @@ Bootstrap: docker
 From: nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 
 %post
-    # Update and install necessary packages
+    echo "Installing required packages..."
     export TZ=UTC
     export DEBIAN_FRONTEND=noninteractive
     apt-get update && apt-get install -y \
         python3 \
         python3-pip \
         build-essential \
-        libopenmpi-dev \
-        openmpi-bin \
         wget \
+        git \
+        bash \
+        gcc \
+        gfortran \
+        g++ \
+        make \
+        file \
         && rm -rf /var/lib/apt/lists/*
 
-    # # Set the timezone
-    # echo "Etc/UTC" > /etc/timezone
-    # ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
+    echo "Installing Open MPI 5.0.5"
+    export OMPI_DIR=/opt/ompi
+    export OMPI_VERSION=5.0.5
+    export OMPI_URL="https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-$OMPI_VERSION.tar.bz2"
+    mkdir -p /tmp/ompi
+    mkdir -p $OMPI_DIR
+    cd /tmp/ompi && wget -O openmpi-$OMPI_VERSION.tar.bz2 $OMPI_URL && tar -xjf openmpi-$OMPI_VERSION.tar.bz2
+    cd /tmp/ompi/openmpi-$OMPI_VERSION && ./configure --prefix=$OMPI_DIR && make -j$(nproc) install
+    rm -rf /tmp/ompi
 
     # Install Python packages
     pip3 install --upgrade pip
@@ -26,8 +37,10 @@ From: nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
     # Set environment variables
     TZ=UTC
     DEBIAN_FRONTEND=noninteractive
-    export PATH=/usr/local/cuda/bin:$PATH
-    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export OMPI_DIR=/opt/ompi
+    export PATH="$OMPI_DIR/bin:/usr/local/cuda/bin:$PATH"
+    export LD_LIBRARY_PATH="$OMPI_DIR/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+    export MANPATH="$OMPI_DIR/share/man:$MANPATH"
 
 %runscript
     # Load environment variables from .env file
@@ -41,7 +54,6 @@ From: nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
     Description Singularity container for running Monte Carlo simulation with CUDA and MPI
 
 %files
-    # Copy your simulation script and other necessary files into the container's user home directory
     src /root/src
     .env /root/.env
     requirements.txt /root/requirements.txt
